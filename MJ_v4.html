@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>麻雀点数計算アプリ - 本格計算版</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f0f4f8;
+            padding: 20px 10px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 450px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+        }
+
+        header h1 {
+            font-size: 18px;
+            color: #1b4d3e;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* 計算結果エリア */
+        .status-card {
+            background: #e6f4ea;
+            border: 1px solid #a3cfbb;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .result-title {
+            font-size: 14px;
+            color: #137333;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .result-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #d32f2f;
+            margin-bottom: 5px;
+        }
+
+        .result-detail {
+            font-size: 14px;
+            color: #4a5568;
+        }
+
+        /* 条件設定エリア */
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .config-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .config-group label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #718096;
+        }
+
+        .config-select {
+            width: 100%;
+            padding: 8px 10px;
+            font-size: 14px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            background-color: white;
+            color: #2d3748;
+            cursor: pointer;
+            outline: none;
+        }
+
+        /* 手牌表示エリア */
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+
+        .hand-container {
+            background: #f7fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 12px 8px;
+            min-height: 70px;
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        .tile {
+            width: 32px;
+            height: 44px;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 3px 0 #bbb, inset 0 -2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .hand-tile {
+            border-bottom: 3px solid #e57373;
+        }
+
+        .placeholder {
+            color: #a0aec0;
+            font-size: 13px;
+            width: 100%;
+            text-align: center;
+            line-height: 44px;
+        }
+
+        /* 牌選択パネル */
+        .selection-panel {
+            background: #edf2f7;
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            background: #e2e8f0;
+            border: none;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #1b4d3e;
+        }
+
+        .tile-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 6px;
+            background: white;
+            padding: 10px;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .tile-grid.jihai {
+            grid-template-columns: repeat(7, 1fr);
+        }
+
+        .manzu .tile { color: #d32f2f; }
+        .pinzu .tile { color: #1976d2; }
+        .sozu .tile { color: #388e3c; }
+        .jihai .tile { color: #4a148c; }
+
+        .control-btns {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .clear-btn { background: #e57373; color: white; }
+        .calc-btn { background: #2e7d32; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1>🀄 麻雀点数計算 - 本格計算版</h1>
+    </header>
+
+    <div class="status-card">
+        <div class="result-title">計算結果</div>
+        <div class="result-display" id="resultScore">ーーー</div>
+        <div class="result-detail" id="resultDetail">手牌を14枚選んでください</div>
+    </div>
+
+    <div class="config-grid">
+        <div class="config-group">
+            <label for="selectKaze">親・子</label>
+            <select class="config-select" id="selectKaze">
+                <option value="ko">子 (子のアガリ)</option>
+                <option value="oya">親 (親のアガリ)</option>
+            </select>
+        </div>
+
+        <div class="config-group">
+            <label for="selectAgari">アガリ方</label>
+            <select class="config-select" id="selectAgari">
+                <option value="ron">ロンアガリ</option>
+                <option value="tsumo">ツモアガリ</option>
+            </select>
+        </div>
+
+        <div class="config-group">
+            <label for="selectHan">翻数 (役の合計 + ドラ)</label>
+            <select class="config-select" id="selectHan">
+                <option value="1">1翻</option>
+                <option value="2">2翻</option>
+                <option value="3">3翻</option>
+                <option value="4">4翻</option>
+                <option value="5">満貫 (5翻)</option>
+                <option value="6">跳満 (6〜7翻)</option>
+                <option value="8">倍満 (8〜10翻)</option>
+                <option value="11">三倍満 (11〜12翻)</option>
+                <option value="13">役満 (13翻〜)</option>
+            </select>
+        </div>
+
+        <div class="config-group">
+            <label for="selectFu">符数</label>
+            <select class="config-select" id="selectFu">
+                <option value="20">20符 (ピンフツモなど)</option>
+                <option value="25">25符 (七対子固定)</option>
+                <option value="30" selected>30符</option>
+                <option value="40">40符</option>
+                <option value="50">50符</option>
+                <option value="60">60符</option>
+                <option value="70">70符</option>
+                <option value="80">80符</option>
+                <option value="90">90符</option>
+                <option value="100">100符</option>
+                <option value="110">110符</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="section-title">現在の手牌 (<span id="tileCount">0</span>/14枚)</div>
+    <div class="hand-container" id="handContainer" onclick="removeTile(event)">
+        <div class="placeholder" id="placeholder">下のパネルから牌をタップして追加</div>
+    </div>
+
+    <div class="selection-panel">
+        <div class="tabs">
+            <button class="tab-btn active" id="tab-manzu" onclick="switchTab('manzu')">萬子</button>
+            <button class="tab-btn" id="tab-pinzu" onclick="switchTab('pinzu')">筒子</button>
+            <button class="tab-btn" id="tab-sozu" onclick="switchTab('sozu')">索子</button>
+            <button class="tab-btn" id="tab-jihai" onclick="switchTab('jihai')">字牌</button>
+        </div>
+
+        <div class="tile-grid manzu" id="gridContainer"></div>
+
+        <div class="control-btns">
+            <button class="action-btn clear-btn" onclick="clearHand()">全消去</button>
+            <button class="action-btn calc-btn" onclick="startCalculation()">点数計算</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentHand = [];
+    let currentTab = 'manzu';
+
+    const tilesData = {
+        manzu: ['🀇', '🀈', '🀉', '🀊', '🀋', '🀌', '🀍', '🀎', '🀏'],
+        pinzu: ['🀙', '🀚', '🀛', '🀜', '🀝', '🀞', '🀟', '🀠', '🀡'],
+        sozu:  ['🀐', '🀑', '🀒', '🀓', '🀔', '🀕', '🀖', '🀗', '🀘'],
+        jihai: ['🀀', '🀁', '🀂', '🀃', '🀆', '🀅', '🀄']
+    };
+
+    function renderGrid() {
+        const grid = document.getElementById('gridContainer');
+        grid.innerHTML = '';
+        grid.className = `tile-grid ${currentTab}`;
+
+        tilesData[currentTab].forEach(tileSymbol => {
+            const tileDiv = document.createElement('div');
+            tileDiv.className = 'tile';
+            tileDiv.innerText = tileSymbol;
+            tileDiv.onclick = () => addTile(tileSymbol);
+            grid.appendChild(tileDiv);
+        });
+    }
+
+    function switchTab(tabName) {
+        currentTab = tabName;
+        ['manzu', 'pinzu', 'sozu', 'jihai'].forEach(t => {
+            document.getElementById(`tab-${t}`).classList.remove('active');
+        });
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+        renderGrid();
+    }
+
+    function addTile(tileSymbol) {
+        if (currentHand.length >= 14) return;
+        currentHand.push(tileSymbol);
+        updateHandUI();
+    }
+
+    function removeTile(event) {
+        const clickedTile = event.target.closest('.hand-tile');
+        if (!clickedTile) return;
+        const index = clickedTile.dataset.index;
+        currentHand.splice(index, 1);
+        updateHandUI();
+    }
+
+    function clearHand() {
+        currentHand = [];
+        updateHandUI();
+    }
+
+    function updateHandUI() {
+        const container = document.getElementById('handContainer');
+        const countSpan = document.getElementById('tileCount');
+        countSpan.innerText = currentHand.length;
+
+        if (currentHand.length === 0) {
+            container.innerHTML = '<div class="placeholder" id="placeholder">下のパネルから牌をタップして追加</div>';
+            document.getElementById('resultScore').innerText = "ーーー";
+            document.getElementById('resultDetail').innerText = "手牌を14枚選んでください";
+            return;
+        }
+
+        container.innerHTML = '';
+        currentHand.forEach((tileSymbol, index) => {
+            const tileDiv = document.createElement('div');
+            tileDiv.className = 'tile hand-tile';
+            tileDiv.innerText = tileSymbol;
+            tileDiv.dataset.index = index;
+            container.appendChild(tileDiv);
+        });
+
+        if (currentHand.length < 14) {
+            document.getElementById('resultDetail').innerText = `あと ${14 - currentHand.length} 枚選んでください`;
+        } else {
+            document.getElementById('resultDetail').innerText = "計算の準備完了！「点数計算」を押してください";
+        }
+    }
+
+    // --- 本格的な麻雀点数計算ロジック ---
+    function startCalculation() {
+        if (currentHand.length < 14) {
+            alert('手牌を14枚揃えてください！');
+            return;
+        }
+
+        const isOya = document.getElementById('selectKaze').value === 'oya';
+        const isTsumo = document.getElementById('selectAgari').value === 'tsumo';
+        const han = parseInt(document.getElementById('selectHan').value);
+        const fu = parseInt(document.getElementById('selectFu').value);
+
+        // 例外ルールのチェック（20符ロン、25符ロンなどは存在しない）
+        if (!isTsumo && fu === 20) {
+            alert('平和ロンは30符、または選択ミスです（20符ロンはありません）');
+            return;
+        }
+        if (isTsumo && fu === 25) {
+            alert('七対子のツモは30符（または25符2翻の特殊計算）として扱われます。ここでは50符として計算するか、ルールをご確認ください。');
+            return;
+        }
+
+        let basePoints = 0; // 各家が支払う基準点
+        let title = `${fu}符 ${han}翻`;
+        let scoreText = "";
+
+        // 1. 高得点（満貫以上）の固定値判定
+        if (han >= 13) {
+            basePoints = 8000;
+            title = "役満";
+        } else if (han >= 11) {
+            basePoints = 6000;
+            title = "三倍満";
+        } else if (han >= 8) {
+            basePoints = 4000;
+            title = "倍満";
+        } else if (han >= 6) {
+            basePoints = 3000;
+            title = "跳満";
+        } else if (han === 5 || (han === 4 && fu >= 40) || (han === 3 && fu >= 70)) {
+            // 切り上げ満貫を含む満貫判定
+            basePoints = 2000;
+            title = "満貫";
+        } else {
+            // 2. 通常の符計算（基本式: 符 * 2^(翻+2)）
+            basePoints = fu * Math.pow(2, han + 2);
+            
+            // 切り上げ満貫の通常ルール（基本点が2000点を超えたら満貫に固定）
+            if (basePoints > 2000) {
+                basePoints = 2000;
+                title = "満貫 (切り上げ)";
+            }
+        }
+
+        // 3. 親・子、ロン・ツモによる実際の点数分配と100点単位の切り上げ
+        if (isOya) {
+            if (isTsumo) {
+                // 親のツモ：基本点×2を全員から貰う。100点未満切り上げ
+                const payment = Math.ceil((basePoints * 2) / 100) * 100;
+                scoreText = `${payment}点オール`;
+                title += ` / ${payment * 3}点`;
+            } else {
+                // 親のロン：基本点×6。100点未満切り上げ
+                const total = Math.ceil((basePoints * 6) / 100) * 100;
+                scoreText = `${total}点`;
+            }
+        } else {
+            if (isTsumo) {
+                // 子のツモ：親は基本点×2、子は基本点×1。それぞれ100点未満切り上げ
+                const oyaPayment = Math.ceil((basePoints * 2) / 100) * 100;
+                const koPayment = Math.ceil((basePoints * 1) / 100) * 100;
+                scoreText = `${koPayment} / ${oyaPayment}点`;
+                title += ` / ${koPayment * 2 + oyaPayment}点`;
+            } else {
+                // 子のロン：基本点×4。100点未満切り上げ
+                const total = Math.ceil((basePoints * 4) / 100) * 100;
+                scoreText = `${total}点`;
+            }
+        }
+
+        // 画面への反映
+        document.getElementById('resultScore').innerText = scoreText;
+        document.getElementById('resultDetail').innerText = title;
+    }
+</script>
+</body>
+</html>
