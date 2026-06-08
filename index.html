@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マイホームページ</title>
+    
+    <style>
+        /* --- ここからポップな見た目にするためのデザイン（CSS） --- */
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif;
+            background-color: #f0fdf4; /* 優しいパステルグリーン */
+            color: #333333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 500px; /* スマホで見やすい横幅 */
+            width: 100%;
+            background: #ffffff;
+            padding: 30px 20px;
+            border-radius: 20px; /* 角を丸くしてポップに */
+            box-shadow: 0 8px 0 #bbf7d0; /* 太めのポップな影 */
+            border: 3px solid #22c55e; /* クッキリした緑の線 */
+            text-align: center;
+            box-sizing: border-box;
+            margin: auto 0;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #16a34a;
+            margin-bottom: 10px;
+        }
+
+        .intro {
+            font-size: 16px;
+            color: #666666;
+            margin-bottom: 30px;
+        }
+
+        /* リンクボタンの並び */
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            margin-bottom: 15px; /* ボタン同士の間隔 */
+        }
+
+        /* 👇 スマホでも押しやすい巨大なボタンリンク */
+        .btn-link {
+            display: block;
+            background-color: #ffde59; /* 元気なイエロー */
+            color: #222222;
+            text-decoration: none; /* 下線を消す */
+            font-weight: bold;
+            font-size: 18px;
+            padding: 16px 20px; /* 上下に厚みをもたせて押しやすく */
+            border-radius: 50px; /* カプセル型の丸いボタン */
+            border: 3px solid #222222; /* クッキリした太枠 */
+            box-shadow: 0 5px 0 #222222; /* 飛び出たような立体感 */
+            transition: all 0.1s ease;
+        }
+
+        /* ボタンを押したときのぷにっとした動き */
+        .btn-link:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #222222;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>ようこそ！<br>私のホームページへ</h1>
+        <p class="intro">ここはトップページです。ゆっくりしていってね！</p>
+
+        <nav>
+            <ul>
+                <li><a href="MJ_v3.html" class="btn-link">🙋‍♂️ MJ_v3</a></li>
+                <li><a href="MJ_v4.html" class="btn-link">📝 _MJ_v4</a></li>
+            </ul>
+        </nav>
+    </div>
+
+</body>
+</html>
