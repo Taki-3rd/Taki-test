@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>麻雀点数表（簡易版）</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f7f6;
+            color: #333;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #16a085;
+            border-left: 5px solid #16a085;
+            padding-left: 10px;
+            margin-top: 40px;
+        }
+        .table-container {
+            overflow-x: auto;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            min-width: 600px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px 8px;
+        }
+        th {
+            background-color: #2c3e50;
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .mangan {
+            background-color: #ffeaa7 !important;
+            font-weight: bold;
+        }
+        .note {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>麻雀点数表</h1>
+
+    <!-- 子の点数表 -->
+    <h2>【子】ロンアガリ / ツモアガリ（子・親の支払い）</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>符数 / 翻数</th>
+                    <th>1翻</th>
+                    <th>2翻</th>
+                    <th>3翻</th>
+                    <th>4翻</th>
+                    <th>5翻（満貫）</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th>20符</th>
+                    <td>-</td>
+                    <td>- <br><span class="note">(ツモ: 400/700)</span></td>
+                    <td>- <br><span class="note">(ツモ: 700/1300)</span></td>
+                    <td>- <br><span class="note">(ツモ: 1300/2600)</span></td>
+                    <td rowspan="6" class="mangan">8000 点<br><span class="note">(ツモ: 2000/4000)</span></td>
+                </tr>
+                <tr>
+                    <th>25符</th>
+                    <td>-</td>
+                    <td>1600<br><span class="note">(七対子ロン)</span></td>
+                    <td>3200<br><span class="note">(ツモ: 800/1600)</span></td>
+                    <td>6400<br><span class="note">(ツモ: 1600/3200)</span></td>
+                </tr>
+                <tr>
+                    <th>30符</th>
+                    <td>1000<br><span class="note">(ツモ: 300/500)</span></td>
+                    <td>2000<br><span class="note">(ツモ: 500/1000)</span></td>
+                    <td>3900<br><span class="note">(ツモ: 1000/2000)</span></td>
+                    <td>7700<br><span class="note">(ツモ: 2000/3900)</span></td>
+                </tr>
+                <tr>
+                    <th>40符</th>
+                    <td>1300<br><span class="note">(ツモ: 400/700)</span></td>
+                    <td>2600<br><span class="note">(ツモ: 700/1300)</span></td>
+                    <td>5200<br><span class="note">(ツモ: 1300/2600)</span></td>
+                    <td class="mangan">満貫 (8000)</td>
+                </tr>
+                <tr>
+                    <th>50符</th>
+                    <td>1600<br><span class="note">(ツモ: 400/800)</span></td>
+                    <td>3200<br><span class="note">(ツモ: 800/1600)</span></td>
+                    <td>6400<br><span class="note">(ツモ: 1600/3200)</span></td>
+                    <td class="mangan">満貫 (8000)</td>
+                </tr>
+                <tr>
+                    <th>60符</th>
+                    <td>2000<br><span class="note">(ツモ: 500/1000)</span></td>
+                    <td>3900<br><span class="note">(ツモ: 1000/2000)</span></td>
+                    <td>7700<br><span class="note">(ツモ: 2000/3900)</span></td>
+                    <td class="mangan">満貫 (8000)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 親の点数表 -->
+    <h2>【親】ロンアガリ / ツモアガリ（各自の支払い）</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>符数 / 翻数</th>
+                    <th>1翻</th>
+                    <th>2翻</th>
+                    <th>3翻</th>
+                    <th>4翻</th>
+                    <th>5翻（満貫）</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th>20符</th>
+                    <td>-</td>
+                    <td>- <br><span class="note">(ツモ: 700ALL)</span></td>
+                    <td>- <br><span class="note">(ツモ: 1300ALL)</span></td>
+                    <td>- <br><span class="note">(ツモ: 2600ALL)</span></td>
+                    <td rowspan="6" class="mangan">12000 点<br><span class="note">(ツモ: 4000ALL)</span></td>
+                </tr>
+                <tr>
+                    <th>25符</th>
+                    <td>-</td>
+                    <td>2400<br><span class="note">(七対子ロン)</span></td>
+                    <td>4800<br><span class="note">(ツモ: 1600ALL)</span></td>
+                    <td>9600<br><span class="note">(ツモ: 3200ALL)</span></td>
+                </tr>
+                <tr>
+                    <th>30符</th>
+                    <td>1500<br><span class="note">(ツモ: 500ALL)</span></td>
+                    <td>2900<br><span class="note">(ツモ: 1000ALL)</span></td>
+                    <td>5800<br><span class="note">(ツモ: 2000ALL)</span></td>
+                    <td>11600<br><span class="note">(ツモ: 3900ALL)</span></td>
+                </tr>
+                <tr>
+                    <th>40符</th>
+                    <td>2000<br><span class="note">(ツモ: 700ALL)</span></td>
+                    <td>3900<br><span class="note">(ツモ: 1300ALL)</span></td>
+                    <td>7700<br><span class="note">(ツモ: 2600ALL)</span></td>
+                    <td class="mangan">満貫 (12000)</td>
+                </tr>
+                <tr>
+                    <th>50符</th>
+                    <td>2400<br><span class="note">(ツモ: 800ALL)</span></td>
+                    <td>4800<br><span class="note">(ツモ: 1600ALL)</span></td>
+                    <td>9600<br><span class="note">(ツモ: 3200ALL)</span></td>
+                    <td class="mangan">満貫 (12000)</td>
+                </tr>
+                <tr>
+                    <th>60符</th>
+                    <td>2900<br><span class="note">(ツモ: 1000ALL)</span></td>
+                    <td>5800<br><span class="note">(ツモ: 2000ALL)</span></td>
+                    <td>11600<br><span class="note">(ツモ: 3900ALL)</span></td>
+                    <td class="mangan">満貫 (12000)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 高翻数の解説 -->
+    <h2>【共通】跳満以上の固定点数</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>翻数</th>
+                    <th>子の点数 (ロン / ツモ)</th>
+                    <th>親の点数 (ロン / ツモ)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th>6〜7翻（跳満）</th>
+                    <td>12000 点 <br><span class="note">(3000 / 6000)</span></td>
+                    <td>18000 点 <br><span class="note">(6000 ALL)</span></td>
+                </tr>
+                <tr>
+                    <th>8〜10翻（倍満）</th>
+                    <td>16000 点 <br><span class="note">(4000 / 8000)</span></td>
+                    <td>24000 点 <br><span class="note">(8000 ALL)</span></td>
+                </tr>
+                <tr>
+                    <th>11〜12翻（三倍満）</th>
+                    <td>24000 点 <br><span class="note">(6000 / 12000)</span></td>
+                    <td>36000 点 <br><span class="note">(12000 ALL)</span></td>
+                </tr>
+                <tr>
+                    <th>13翻〜（役満）</th>
+                    <td>32000 点 <br><span class="note">(8000 / 16000)</span></td>
+                    <td>48000 点 <br><span class="note">(16000 ALL)</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>
