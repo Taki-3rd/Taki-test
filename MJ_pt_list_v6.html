@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>麻雀点数表 — 符計算ナビ付き</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f8f9fa;
+            color: #333333;
+            margin: 0;
+            padding: 10px;
+            padding-bottom: 40px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.3rem;
+            color: #4a5568;
+            margin: 15px 0;
+            font-weight: 600;
+        }
+
+        /* 画面上部に固定されるナビゲーション */
+        .sticky-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background-color: #f8f9fa;
+            padding: 10px 0;
+            display: flex;
+            gap: 6px;
+        }
+
+        .nav-btn {
+            flex: 1;
+            text-align: center;
+            padding: 10px 0;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #4a5568;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            text-decoration: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .nav-btn.btn-ko.active { background: #ebf8ff; color: #2b6cb0; border-color: #bee3f8; }
+        .nav-btn.btn-oya.active { background: #fff5f5; color: #c53030; border-color: #fed7d7; }
+        .nav-btn.btn-tokushu.active { background: #faf5ff; color: #6b46c1; border-color: #e9d8fd; }
+
+        h2 {
+            font-size: 1.05rem;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            padding-left: 8px;
+            font-weight: 600;
+        }
+        .title-ko { border-left: 4px solid #4299e1; color: #2b6cb0; }
+        .title-oya { border-left: 4px solid #f56565; color: #c53030; }
+        .title-tokushu { border-left: 4px solid #9f7aea; color: #6b46c1; }
+
+        /* カード全体の共通設定 */
+        .card {
+            background: #ffffff;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        /* 【新機能】符計算まとめカード（マイルドなグリーン） */
+        .fu-calc-card {
+            border-color: #c6f6d5;
+            margin-top: 5px;
+            margin-bottom: 20px;
+        }
+        .fu-calc-card summary {
+            background: #c6f6d5;
+            color: #22543d;
+            font-size: 0.95rem;
+        }
+        .fu-calc-content {
+            padding: 12px 14px;
+            font-size: 0.85rem;
+            color: #2d3748;
+            background: #fff;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .fu-calc-section {
+            margin-bottom: 10px;
+            border-bottom: 1px dashed #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .fu-calc-section:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .fu-calc-title {
+            font-weight: bold;
+            color: #2f855a;
+            margin-bottom: 4px;
+        }
+        .fu-calc-grid {
+            display: flex;
+            justify-content: space-between;
+            line-height: 1.5;
+        }
+
+        /* 通常の開閉ヘッダー（summary） */
+        summary {
+            background: #edf2f7;
+            padding: 12px 14px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2d3748;
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            outline: none;
+            user-select: none;
+        }
+        summary::-webkit-details-marker { display: none; }
+        summary::after {
+            content: '▼';
+            font-size: 0.75rem;
+            color: #718096;
+            transition: transform 0.2s;
+        }
+        details[open] summary::after { transform: rotate(180deg); }
+
+        /* 点数行のレイアウト */
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px;
+            border-bottom: 1px solid #edf2f7;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .row:last-child { border-bottom: none; }
+
+        .fu-label { font-size: 0.95rem; font-weight: 600; color: #4a5568; }
+        .fu-desc { font-size: 0.75rem; color: #718096; font-weight: normal; display: block; margin-top: 2px; }
+
+        .score-box { text-align: right; }
+        .score-main { font-size: 1.15rem; font-weight: 600; color: #1a202c; }
+        .score-sub { font-size: 0.8rem; color: #64748b; margin-top: 1px; }
+
+        /* 満貫カードのカラー調整 */
+        .mangan-card { border-color: #feebc8; }
+        .mangan-card summary { background: #feebc8; color: #c05621; }
+        .mangan-row { background-color: #fffaf0; }
+        .mangan-row .score-main, .mangan-row .fu-label { color: #dd6b20; }
+
+        /* 高翻数カードのカラー調整 */
+        .tokushu-card { border-color: #e9d8fd; }
+        .tokushu-card summary { background: #e9d8fd; color: #6b46c1; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .footer { text-align: center; font-size: 0.8rem; color: #a0aec0; margin-top: 40px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>麻雀点数表</h1>
+
+        <div class="sticky-nav">
+            <a href="#ko" class="nav-btn btn-ko active" onclick="activateTab(this)">子（コ）</a>
+            <a href="#oya" class="nav-btn btn-oya" onclick="activateTab(this)">親（オヤ）</a>
+            <a href="#tokushu" class="nav-btn btn-tokushu" onclick="activateTab(this)">満貫以上</a>
+        </div>
+
+        <!-- ==================== 【追加】符計算簡易ナビ ==================== -->
+        <details class="card fu-calc-card">
+            <summary>📋 5秒でわかる！符計算の基本まとめ</summary>
+            <div class="fu-calc-content">
+                <div class="fu-calc-section">
+                    <div class="fu-calc-title">① 基本符（ここからスタート）</div>
+                    <div class="fu-calc-grid"><span>メンゼンロン</span><span>30符</span></div>
+                    <div class="fu-calc-grid"><span>鳴きロン / ツモアガリ全般</span><span>20符</span></div>
+                    <div class="fu-calc-grid"><span>七対子（チートイツ）</span><span>25符固定</span></div>
+                </div>
+                <div class="fu-calc-section">
+                    <div class="fu-calc-title">② ピンフ・チートイ以外の加算ポイント</div>
+                    <div class="fu-calc-grid"><span>ツモアガリ（平和ツモ以外）</span><span>＋2符</span></div>
+                    <div class="fu-calc-grid"><span>メンゼンロンのテンパイ形（単騎/辺張/嵌張/ペン・カン・タン）</span><span>＋2符</span></div>
+                    <div class="fu-calc-grid"><span>役牌の雀頭（白・發・中・自風・場風）</span><span>＋2符</span></div>
+                </div>
+                <div class="fu-calc-section">
+                    <div class="fu-calc-title">③ コーツ（3枚組）の加算（ヤオチュウ牌[1・9・字]は2倍）</div>
+                    <div class="fu-calc-grid"><span>明刻（ポンした3枚）</span><span>中張 2符 / ヤオ 4符</span></div>
+                    <div class="fu-calc-grid"><span>暗刻（手の中の3枚）</span><span>中張 4符 / ヤオ 8符</span></div>
+                    <div class="fu-calc-grid"><span>明槓（カンした4枚）</span><span>中張 8符 / ヤオ 16符</span></div>
+                    <div class="fu-calc-grid"><span>暗槓（手の中でカン）</span><span>中張 16符 / ヤオ 32符</span></div>
+                </div>
+                <div style="font-weight: bold; color: #e53e3e; text-align: center; margin-top: 8px;">
+                    ※すべて足して、1の位を「切り上げ」する！（例: 32符 ➔ 40符）
+                </div>
+            </div>
+        </details>
+
+        <!-- ==================== 子の点数 ==================== -->
+        <div id="ko">
+            <h2 class="title-ko">子（タップして展開）</h2>
+            
+            <details class="card">
+                <summary>1翻</summary>
+                <div class="row">
+                    <div class="fu-label">30符<span class="fu-desc">一般形（平和ロン以外）</span></div>
+                    <div class="score-box"><div class="score-main">1000</div><div class="score-sub">ツモ: 300 / 500</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">40符<span class="fu-desc">メンゼンロン・アンコなど</span></div>
+                    <div class="score-box"><div class="score-main">1300</div><div class="score-sub">ツモ: 400 / 700</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">50符 / 60符</div>
+                    <div class="score-box"><div class="score-main">1600 / 2000</div><div class="score-sub">ツモ: 400･800 / 500･1000</div></div>
+                </div>
+            </details>
+
+            <details class="card">
+                <summary>2翻</summary>
+                <div class="row">
+                    <div class="fu-label">20符<span class="fu-desc">平和ツモ</span></div>
+                    <div class="score-box"><div class="score-main">-</div><div class="score-sub">ツモ: 400 / 700</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">25符<span class="fu-desc">七対子（ロンのみ）</span></div>
+                    <div class="score-box"><div class="score-main">1600</div><div class="score-sub">-</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">30符</div>
+                    <div class="score-box"><div class="score-main">2000</div><div class="score-sub">ツモ: 500 / 1000</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">40符</div>
+                    <div class="score-box"><div class="score-main">2600</div><div class="score-sub">ツモ: 700 / 1300</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">50符 / 60符</div>
+                    <div class="score-box"><div class="score-main">3200 / 3900</div><div class="score-sub">ツモ: 800･1600 / 1000･2000</div></div>
+                </div>
+            </details>
+
+            <details class="card">
+                <summary>3翻</summary>
+                <div class="row">
+                    <div class="fu-label">20符<span class="fu-desc">平和ツモ</span></div>
+                    <div class="score-box"><div class="score-main">-</div><div class="score-sub">ツモ: 700 / 1300</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">25符<span class="fu-desc">七対子ツモ・ロン</span></div>
+                    <div class="score-box"><div class="score-main">3200</div><div class="score-sub">ツモ: 800 / 1600</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">30符</div>
+                    <div class="score-box"><div class="score-main">3900</div><div class="score-sub">ツモ: 1000 / 2000</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">40符</div>
+                    <div class="score-box"><div class="score-main">5200</div><div class="score-sub">ツモ: 1300 / 2600</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">50符 / 60符</div>
+                    <div class="score-box"><div class="score-main">6400 / 7700</div><div class="score-sub">ツモは 4翻切り上げ満貫</div></div>
+                </div>
+            </details>
+
+            <details class="card mangan-card">
+                <summary>4翻</summary>
+                <div class="row">
+                    <div class="fu-label">20符<span class="fu-desc">平和ツモ</span></div>
+                    <div class="score-box"><div class="score-main">-</div><div class="score-sub">ツモ: 1300 / 2600</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">25符<span class="fu-desc">七対子</span></div>
+                    <div class="score-box"><div class="score-main">6400</div><div class="score-sub">ツモ: 1600 / 3200</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">30符</div>
+                    <div class="score-box"><div class="score-main">7700</div><div class="score-sub">ツモ: 2000 / 3900</div></div>
+                </div>
+                <div class="row mangan-row">
+                    <div class="fu-label">40符以上<span class="fu-desc">ここから満貫固定</span></div>
+                    <div class="score-box"><div class="score-main">8000</div><div class="score-sub">ツモ: 2000 / 4000</div></div>
+                </div>
+            </details>
+
+            <details class="card mangan-card">
+                <summary>5翻 【満貫】</summary>
+                <div class="row mangan-row">
+                    <div class="fu-label">全符共通</div>
+                    <div class="score-box"><div class="score-main">8000</div><div class="score-sub">ツモ: 2000 / 4000</div></div>
+                </div>
+            </details>
+        </div>
+
+        <!-- ==================== 親の点数 ==================== -->
+        <div id="oya">
+            <h2 class="title-oya">親（タップして展開）</h2>
+            
+            <details class="card">
+                <summary>1翻</summary>
+                <div class="row">
+                    <div class="fu-label">30符</div>
+                    <div class="score-box"><div class="score-main">1500</div><div class="score-sub">ツモ: 500 ALL</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">40符</div>
+                    <div class="score-box"><div class="score-main">2000</div><div class="score-sub">ツモ: 700 ALL</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">50符 / 60符</div>
+                    <div class="score-box"><div class="score-main">2400 / 2900</div><div class="score-sub">ツモ: 800 ALL / 1000 ALL</div></div>
+                </div>
+            </details>
+
+            <details class="card">
+                <summary>2翻</summary>
+                <div class="row">
+                    <div class="fu-label">20符</div>
+                    <div class="score-box"><div class="score-main">-</div><div class="score-sub">ツモ: 700 ALL</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">25符</div>
+                    <div class="score-box"><div class="score-main">2400</div><div class="score-sub">ロンのみ</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">30符</div>
+                    <div class="score-box"><div class="score-main">2900</div><div class="score-sub">ツモ: 1000 ALL</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">40符</div>
+                    <div class="score-box"><div class="score-main">3900</div><div class="score-sub">ツモ: 1300 ALL</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">50符 / 60符</div>
+                    <div class="score-box"><div class="score-main">4800 / 5800</div><div class="score-sub">ツモ: 1600 ALL / 2000 ALL</div></div>
+                </div>
+            </details>
+
+            <details class="card">
+                <summary>3翻</summary>
+                <div class="row">
+                    <div class="fu-label">20符</div>
+                    <div class="score-box"><div class="score-main">-</div><div class="score-sub">ツモ: 1300 ALL</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">25符</div>
+                    <div class="score-box"><div class="score-main">4800</div><div class="score-sub">ツモ: 1600 ALL</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">30符</div>
+                    <div class="score-box"><div class="score-main">5800</div><div class="score-sub">ツモ: 2000 ALL</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">40符</div>
+                    <div class="score-box"><div class="score-main">7700</div><div class="score-sub">ツモ: 2600 ALL</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">50符 / 60符</div>
+                    <div class="score-box"><div class="score-main">9600 / 11600</div><div class="score-sub">ツモは 4翻切り上げ満貫</div></div>
+                </div>
+            </details>
+
+            <details class="card mangan-card">
+                <summary>4翻</summary>
+                <div class="row">
+                    <div class="fu-label">20符</div>
+                    <div class="score-box"><div class="score-main">-</div><div class="score-sub">ツモ: 2600 ALL</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">25符</div>
+                    <div class="score-box"><div class="score-main">9600</div><div class="score-sub">ツモ: 3200 ALL</div></div>
+                </div>
+                <div class="row">
+                    <div class="fu-label">30符</div>
+                    <div class="score-box"><div class="score-main">11600</div><div class="score-sub">ツモ: 3900 ALL</div></div>
+                </div>
+                <div class="row mangan-row">
+                    <div class="fu-label">40符以上</div>
+                    <div class="score-box"><div class="score-main">12000</div><div class="score-sub">ツモ: 4000 ALL</div></div>
+                </div>
+            </details>
+
+            <details class="card mangan-card">
+                <summary>5翻 【満貫】</summary>
+                <div class="row mangan-row">
+                    <div class="fu-label">全符共通</div>
+                    <div class="score-box"><div class="score-main">12000</div><div class="score-sub">ツモ: 4000 ALL</div></div>
+                </div>
+            </details>
+        </div>
+
+        <!-- ==================== 跳満以上 ==================== -->
+        <div id="tokushu">
+            <h2 class="title-tokushu">高翻数（固定点数）</h2>
+            
+            <details class="card tokushu-card">
+                <summary>6〜7翻 【跳満】</summary>
+                <div class="row"><div class="fu-label">子</div><div class="score-box"><div class="score-main">12000</div><div class="score-sub">ツモ: 3000 / 6000</div></div></div>
+                <div class="row"><div class="fu-label">親</div><div class="score-box"><div class="score-main">18000</div><div class="score-sub">ツモ: 6000 ALL</div></div></div>
+            </details>
+
+            <details class="card tokushu-card">
+                <summary>8〜10翻 【倍満】</summary>
+                <div class="row"><div class="fu-label">子</div><div class="score-box"><div class="score-main">16000</div><div class="score-sub">ツモ: 4000 / 8000</div></div></div>
+                <div class="row"><div class="fu-label">親</div><div class="score-box"><div class="score-main">24000</div><div class="score-sub">ツモ: 8000 ALL</div></div></div>
+            </details>
+
+            <details class="card tokushu-card">
+                <summary>11〜12翻 【三倍満】</summary>
+                <div class="row"><div class="fu-label">子</div><div class="score-box"><div class="score-main">24000</div><div class="score-sub">ツモ: 6000 / 12000</div></div></div>
+                <div class="row"><div class="fu-label">親</div><div class="score-box"><div class="score-main">36000</div><div class="score-sub">ツモ: 12000 ALL</div></div></div>
+            </details>
+
+            <details class="card tokushu-card" style="border-color: #feb2b2;">
+                <summary style="background: #fff5f5; color: #e53e3e;">13翻〜 【役満】</summary>
+                <div class="row"><div class="fu-label">子</div><div class="score-box"><div class="score-main" style="color: #e53e3e;">32000</div><div class="score-sub">ツモ: 8000 / 16000</div></div></div>
+                <div class="row"><div class="fu-label">親</div><div class="score-box"><div class="score-main" style="color: #e53e3e;">48000</div><div class="score-sub">ツモ: 16000 ALL</div></div></div>
+            </details>
+        </div>
+
+        <div class="footer">点数表（符計算カンペ付き）</div>
+    </div>
+
+    <script>
+        function activateTab(element) {
+            const buttons = document.querySelectorAll('.nav-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+        }
+    </script>
+</body>
+</html>
