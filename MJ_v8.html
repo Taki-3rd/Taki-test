@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>麻雀点数計算アプリ - リーチ・ツモボタン版</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; }
+        body { background-color: #f0f4f8; padding: 20px 10px; display: flex; justify-content: center; }
+        .app-container { width: 100%; max-width: 450px; background: white; border-radius: 16px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); padding: 20px; }
+        header h1 { font-size: 16px; color: #1b4d3e; text-align: center; margin-bottom: 20px; }
+        
+        /* 計算結果エリア */
+        .status-card { background: #e6f4ea; border: 1px solid #a3cfbb; border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align: center; }
+        .result-title { font-size: 13px; color: #137333; margin-bottom: 5px; font-weight: bold; }
+        .result-display { font-size: 26px; font-weight: bold; color: #d32f2f; margin-bottom: 5px; }
+        .result-detail { font-size: 14px; color: #2d3748; font-weight: bold; }
+        .yaku-list { font-size: 12px; color: #4a5568; margin-top: 8px; background: rgba(255,255,255,0.6); padding: 8px; border-radius: 6px; display: inline-block; text-align: left; width: 100%; }
+        
+        /* クイックアクションボタン（リーチ・ツモ） */
+        .action-toggle-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .toggle-btn {
+            flex: 1;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            border: 2px solid #cbd5e0;
+            border-radius: 10px;
+            background: white;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .toggle-btn.active-riichi {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+        .toggle-btn.active-tsumo {
+            background: #cce5ff;
+            border-color: #007bff;
+            color: #004085;
+        }
+
+        /* 条件設定エリア */
+        .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 20px; }
+        .config-group { display: flex; flex-direction: column; gap: 4px; }
+        .config-group label { font-size: 11px; font-weight: bold; color: #718096; }
+        .config-select { width: 100%; padding: 8px 10px; font-size: 14px; border: 1px solid #cbd5e0; border-radius: 6px; background-color: white; color: #2d3748; cursor: pointer; outline: none; }
+        
+        /* 手牌表示エリア */
+        .section-title { font-size: 14px; font-weight: bold; color: #4a5568; margin-bottom: 8px; }
+        .hand-container { background: #f7fafc; border: 2px dashed #cbd5e0; border-radius: 12px; padding: 12px 8px; min-height: 70px; display: flex; gap: 4px; overflow-x: auto; margin-bottom: 20px; }
+        .tile { width: 32px; height: 44px; background: #fff; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 3px 0 #bbb, inset 0 -2px 5px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; user-select: none; }
+        .hand-tile { border-bottom: 3px solid #e57373; }
+        .placeholder { color: #a0aec0; font-size: 13px; width: 100%; text-align: center; line-height: 44px; }
+        
+        /* 牌選択パネル */
+        .selection-panel { background: #edf2f7; border-radius: 12px; padding: 12px; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 10px; }
+        .tab-btn { flex: 1; padding: 8px; background: #e2e8f0; border: none; border-radius: 6px 6px 0 0; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .tab-btn.active { background: white; color: #1b4d3e; }
+        .tile-grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; background: white; padding: 10px; border-radius: 0 0 8px 8px; }
+        .tile-grid.jihai { grid-template-columns: repeat(7, 1fr); }
+        .manzu .tile { color: #d32f2f; }
+        .pinzu .tile { color: #1976d2; }
+        .sozu .tile { color: #388e3c; }
+        .jihai .tile { color: #4a148c; }
+        .control-btns { margin-top: 15px; display: flex; gap: 10px; }
+        .action-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .clear-btn { background: #e57373; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1>🀄 麻雀点数計算 - クイックボタン版</h1>
+    </header>
+
+    <div class="status-card">
+        <div class="result-title">自動判定結果</div>
+        <div class="result-display" id="resultScore">ーーー</div>
+        <div class="result-detail" id="resultDetail">手牌を14枚選んでください</div>
+        <div class="yaku-list" id="yakuList" style="display:none;"></div>
+    </div>
+
+    <!-- 💡 新設：リーチ・ツモのワンタップ切り替えボタン -->
+    <div class="action-toggle-container">
+        <button class="toggle-btn" id="btnRiichi" onclick="toggleRiichi()">リーチ (OFF)</button>
+        <button class="toggle-btn" id="btnTsumo" onclick="toggleTsumo()">ツモorロン</button>
+    </div>
+
+    <div class="config-grid">
+        <div class="config-group">
+            <label for="selectBa">場風 (バカゼ)</label>
+            <select class="config-select" id="selectBa" onchange="triggerAutoCalc()">
+                <option value="z1">東場</option>
+                <option value="z2">南場</option>
+            </select>
+        </div>
+
+        <div class="config-group">
+            <label for="selectXia">自風 (ジカゼ)</label>
+            <select class="config-select" id="selectXia" onchange="triggerAutoCalc()">
+                <option value="z1">東家 (親)</option>
+                <option value="z2">南家 (子)</option>
+                <option value="z3">西家 (子)</option>
+                <option value="z4">北家 (子)</option>
+            </select>
+        </div>
+
+        <div class="config-group" style="grid-column: span 2;">
+            <label for="selectDora">ドラの数</label>
+            <select class="config-select" id="selectDora" onchange="triggerAutoCalc()">
+                <option value="0">なし</option>
+                <option value="1">ドラ 1</option>
+                <option value="2">ドラ 2</option>
+                <option value="3">ドラ 3</option>
+                <option value="4">ドラ 4</option>
+                <option value="5">ドラ 5</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="section-title">現在の手牌 (<span id="tileCount">0</span>/14枚)</div>
+    <div class="hand-container" id="handContainer" onclick="removeTile(event)">
+        <div class="placeholder">下のパネルから牌をタップして追加</div>
+    </div>
+
+    <div class="selection-panel">
+        <div class="tabs">
+            <button class="tab-btn active" id="tab-manzu" onclick="switchTab('manzu')">萬子</button>
+            <button class="tab-btn" id="tab-pinzu" onclick="switchTab('pinzu')">筒子</button>
+            <button class="tab-btn" id="tab-sozu" onclick="switchTab('sozu')">索子</button>
+            <button class="tab-btn" id="tab-jihai" onclick="switchTab('jihai')">字牌</button>
+        </div>
+
+        <div class="tile-grid manzu" id="gridContainer"></div>
+
+        <div class="control-btns">
+            <button class="action-btn clear-btn" onclick="clearHand()">全消去</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentHand = []; 
+    let sortedHand = [];  
+    let currentTab = 'manzu';
+    
+    // 状態管理変数
+    let isRiichiActive = false;
+    let isTsumoActive = false;
+
+    const tilesMap = {
+        'm1':'🀇','m2':'🀈','m3':'🀉','m4':'🀊','m5':'🀋','m6':'🀌','m7':'🀍','m8':'🀎','m9':'🀏',
+        'p1':'🀙','p2':'🀚','p3':'🀛','p4':'🀜','p5':'🀝','p6':'🀞','p7':'🀟','p8':'🀠','p9':'🀡',
+        's1':'🀐','s2':'🀑','s3':'🀒','s4':'🀓','s5':'🀔','s6':'🀕','s7':'🀖','s8':'🀗','s9':'🀘',
+        'z1':'🀀','z2':'🀁','z3':'🀂','z4':'🀃','z5':'🀆','z6':'🀅','z7':'🀄'
+    };
+
+    const tilesData = {
+        manzu: ['m1','m2','m3','m4','m5','m6','m7','m8','m9'],
+        pinzu: ['p1','p2','p3','p4','p5','p6','p7','p8','p9'],
+        sozu:  ['s1','s2','s3','s4','s5','s6','s7','s8','s9'],
+        jihai: ['z1','z2','z3','z4','z5','z6','z7']
+    };
+
+    function renderGrid() {
+        const grid = document.getElementById('gridContainer');
+        grid.innerHTML = '';
+        grid.className = `tile-grid ${currentTab}`;
+        tilesData[currentTab].forEach(code => {
+            const tileDiv = document.createElement('div');
+            tileDiv.className = 'tile';
+            tileDiv.innerText = tilesMap[code];
+            tileDiv.onclick = () => addTile(code);
+            grid.appendChild(tileDiv);
+        });
+    }
+
+    function switchTab(tabName) {
+        currentTab = tabName;
+        ['manzu', 'pinzu', 'sozu', 'jihai'].forEach(t => {
+            document.getElementById(`tab-${t}`).classList.remove('active');
+        });
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+        renderGrid();
+    }
+
+    function addTile(code) {
+        if (currentHand.length >= 14) return;
+        currentHand.push(code);
+        sortedHand = [...currentHand].sort((a, b) => a.localeCompare(b));
+        updateHandUI();
+        if (currentHand.length === 14) offlineCalculate();
+    }
+
+    function removeTile(event) {
+        const clickedTile = event.target.closest('.hand-tile');
+        if (!clickedTile) return;
+        const index = parseInt(clickedTile.dataset.index);
+        const targetCode = sortedHand[index];
+        const origIndex = currentHand.indexOf(targetCode);
+        if (origIndex > -1) currentHand.splice(origIndex, 1);
+        sortedHand = [...currentHand].sort((a, b) => a.localeCompare(b));
+        updateHandUI();
+    }
+
+    function clearHand() {
+        currentHand = [];
+        sortedHand = [];
+        updateHandUI();
+    }
+
+    function updateHandUI() {
+        const container = document.getElementById('handContainer');
+        document.getElementById('tileCount').innerText = sortedHand.length;
+
+        if (sortedHand.length === 0) {
+            container.innerHTML = '<div class="placeholder">下のパネルから牌をタップして追加</div>';
+            document.getElementById('resultScore').innerText = "ーーー";
+            document.getElementById('resultDetail').innerText = "手牌を14枚選んでください";
+            document.getElementById('yakuList').style.display = 'none';
+            return;
+        }
+
+        container.innerHTML = '';
+        sortedHand.forEach((code, index) => {
+            const tileDiv = document.createElement('div');
+            tileDiv.className = 'tile hand-tile';
+            tileDiv.innerText = tilesMap[code];
+            tileDiv.dataset.index = index;
+            container.appendChild(tileDiv);
+        });
+
+        if (sortedHand.length < 14) {
+            document.getElementById('resultDetail').innerText = `あと ${14 - sortedHand.length} 枚選んでください`;
+            document.getElementById('resultScore').innerText = "ーーー";
+            document.getElementById('yakuList').style.display = 'none';
+        }
+    }
+
+    // 💡 ボタンのトグル処理
+    function toggleRiichi() {
+        isRiichiActive = !isRiichiActive;
+        const btn = document.getElementById('btnRiichi');
+        if (isRiichiActive) {
+            btn.innerText = "立直 (ON)";
+            btn.classList.add('active-riichi');
+        } else {
+            btn.innerText = "リーチ (OFF)";
+            btn.classList.remove('active-riichi');
+        }
+        triggerAutoCalc();
+    }
+
+    function toggleTsumo() {
+        isTsumoActive = !isTsumoActive;
+        const btn = document.getElementById('btnTsumo');
+        if (isTsumoActive) {
+            btn.innerText = "ツモ";
+            btn.classList.add('active-tsumo');
+        } else {
+            btn.innerText = "ロン";
+            btn.classList.remove('active-tsumo');
+        }
+        triggerAutoCalc();
+    }
+
+    function triggerAutoCalc() {
+        if (sortedHand.length === 14) offlineCalculate();
+    }
+
+    // --- 🀄 【完全オフライン】ピンフ・高精度判定対応アルゴリズム ---
+    function offlineCalculate() {
+        const baCode = document.getElementById('selectBa').value;   
+        const xiaCode = document.getElementById('selectXia').value; 
+        const isOya = xiaCode === 'z1';
+        const doraCount = parseInt(document.getElementById('selectDora').value);
+        
+        // 14枚目に選んだ牌をアガリ牌とする
+        const agariCode = currentHand[currentHand.length - 1]; 
+
+        const counts = {};
+        Object.keys(tilesMap).forEach(k => counts[k] = 0);
+        sortedHand.forEach(c => counts[c]++);
+
+        // 七対子（チートイツ）の判定
+        let pairCount = 0;
+        Object.values(counts).forEach(v => { if(v === 2) pairCount++; });
+        
+        let validPatterns = [];
+
+        if (pairCount === 7) {
+            let yakuNames = ['七対子 (2翻)'];
+            let han = 2;
+            if (isRiichiActive) { yakuNames.push("立直 (1翻)"); han += 1; }
+            if (isTsumoActive) { yakuNames.push("門前清自模和 (1翻)"); han += 1; }
+            validPatterns.push({ type: 'chitoitsu', fu: 25, yaku: yakuNames, han: han });
+        }
+
+        // 4面子1雀頭の全探索分解
+        let solutions = [];
+        function FormTeams(restCounts, currentArrangement) {
+            let keys = Object.keys(restCounts).filter(k => restCounts[k] > 0);
+            if (keys.length === 0) {
+                solutions.push(JSON.parse(JSON.stringify(currentArrangement)));
+                return;
+            }
+            let firstTile = keys[0];
+
+            if (restCounts[firstTile] >= 3) {
+                restCounts[firstTile] -= 3;
+                currentArrangement.koutsu.push(firstTile);
+                FormTeams(restCounts, currentArrangement);
+                currentArrangement.koutsu.pop();
+                restCounts[firstTile] += 3;
+            }
+
+            if (firstTile[0] !== 'z') {
+                let num = parseInt(firstTile[1]);
+                let next1 = firstTile[0] + (num + 1);
+                let next2 = firstTile[0] + (num + 2);
+                if (restCounts[next1] > 0 && restCounts[next2] > 0) {
+                    restCounts[firstTile]--;
+                    restCounts[next1]--;
+                    restCounts[next2]--;
+                    currentArrangement.shuntsu.push(firstTile); 
+                    FormTeams(restCounts, currentArrangement);
+                    currentArrangement.shuntsu.pop();
+                    restCounts[firstTile]++;
+                    restCounts[next1]++;
+                    restCounts[next2]++;
+                }
+            }
+        }
+
+        Object.keys(counts).forEach(tile => {
+            if (counts[tile] >= 2) {
+                counts[tile] -= 2;
+                FormTeams(counts, { jantou: tile, koutsu: [], shuntsu: [] });
+                counts[tile] += 2;
+            }
+        });
+
+        if (solutions.length > 0) {
+            solutions.forEach(sol => {
+                let yakuNames = [];
+                let han = 0;
+                let fuDetails = 20; 
+
+                // ① 状態トグルボタンによる役判定
+                if (isRiichiActive) { yakuNames.push("立直 (1翻)"); han += 1; }
+                if (isTsumoActive)  { yakuNames.push("門前清自模和 (1翻)"); han += 1; }
+
+                // ② タンヤオ判定
+                let isTanyao = true;
+                sortedHand.forEach(c => {
+                    if (c.includes('1') || c.includes('9') || c.includes('z')) isTanyao = false;
+                });
+                if (isTanyao) { yakuNames.push("断幺九 (1翻)"); han += 1; }
+
+                // ③ トイトイ判定
+                if (sol.koutsu.length === 4) { yakuNames.push("対々和 (2翻)"); han += 2; }
+
+                // ④ 待ちの形の判定
+                let isRyanmen = false;
+                let isPinfuJantouValid = true;
+
+                if (sol.jantou === 'z5' || sol.jantou === 'z6' || sol.jantou === 'z7' || sol.jantou === baCode || sol.jantou === xiaCode) {
+                    isPinfuJantouValid = false;
+                }
+
+                sol.shuntsu.forEach(startTile => {
+                    let type = startTile[0];
+                    let num = parseInt(startTile[1]);
+                    if (agariCode === type + (num + 2) && num !== 7) { isRyanmen = true; }
+                    if (agariCode === type + num && num !== 1) { isRyanmen = true; }
+                });
+
+                // ⑤ 平和（ピンフ）の確定判定
+                let isPinfu = false;
+                if (sol.shuntsu.length === 4 && isPinfuJantouValid && isRyanmen) {
+                    isPinfu = true;
+                    yakuNames.push("平和 (1翻)");
+                    han += 1;
+                }
+
+                // ⑥ 符の加算計算
+                if (isPinfu) {
+                    fuDetails = isTsumoActive ? 20 : 30; 
+                } else {
+                    fuDetails = isTsumoActive ? 20 : 30;
+                    sol.koutsu.forEach(k => {
+                        if (k.includes('1') || k.includes('9') || k.includes('z')) fuDetails += 4; 
+                        else fuDetails += 2; 
+                    });
+                    if (sol.jantou === 'z5' || sol.jantou === 'z6' || sol.jantou === 'z7' || sol.jantou === baCode || sol.jantou === xiaCode) {
+                        fuDetails += 2;
+                    }
+                    if (!isRyanmen && sol.jantou !== agariCode) { fuDetails += 2; }
+                    if (sol.jantou === agariCode) { fuDetails += 2; }
+                    if (isTsumoActive) fuDetails += 2;
+                }
+
+                let roundedFu = Math.ceil(fuDetails / 10) * 10;
+                if (roundedFu < 30 && !isTsumoActive && !isPinfu) roundedFu = 30;
+
+                // 役なし（ロンアガリ時）の補正
+                if (yakuNames.length === 0 && !isTsumoActive) {
+                    yakuNames.push("メンゼンロン (1翻相当)"); 
+                    han += 1;
+                }
+
+                validPatterns.push({ type: 'normal', fu: roundedFu, yaku: yakuNames, han: han });
+            });
+        }
+
+        if (validPatterns.length === 0) {
+            document.getElementById('resultScore').innerText = "不成立";
+            document.getElementById('resultDetail').innerText = "アガリの形になっていません。";
+            document.getElementById('yakuList').style.display = 'none';
+            return;
+        }
+
+        let bestPattern = validPatterns[0];
+        let maxScore = 0;
+
+        validPatterns.forEach(p => {
+            let totalHan = p.han + doraCount;
+            let bp = 0;
+            if (totalHan >= 13) bp = 8000;
+            else if (totalHan >= 11) bp = 6000;
+            else if (totalHan >= 8) bp = 4000;
+            else if (totalHan >= 6) bp = 3000;
+            else if (totalHan === 5 || (totalHan === 4 && p.fu >= 40) || (totalHan === 3 && p.fu >= 70)) bp = 2000;
+            else {
+                bp = p.fu * Math.pow(2, totalHan + 2);
+                if (bp > 2000) bp = 2000;
+            }
+            if (bp > maxScore) { maxScore = bp; bestPattern = p; }
+        });
+
+        let finalHan = bestPattern.han + doraCount;
+        let basePoints = maxScore;
+        let titleText = `${bestPattern.fu}符 ${finalHan}翻`;
+
+        if (finalHan >= 13) titleText = "役満";
+        else if (finalHan >= 11) titleText = "三倍満";
+        else if (finalHan >= 8) titleText = "倍満";
+        else if (finalHan >= 6) titleText = "跳満";
+        else if (basePoints === 2000) titleText = "満貫";
+
+        let scoreText = "";
+        if (isOya) {
+            if (isTsumoActive) {
+                let payment = Math.ceil((basePoints * 2) / 100) * 100;
+                scoreText = `${payment}点オール`;
+            } else {
+                let total = Math.ceil((basePoints * 6) / 100) * 100;
+                scoreText = `${total}点`;
+            }
+        } else {
+            if (isTsumoActive) {
+                let oyaPayment = Math.ceil((basePoints * 2) / 100) * 100;
+                let koPayment = Math.ceil((basePoints * 1) / 100) * 100;
+                scoreText = `${koPayment} / ${oyaPayment}点`;
+            } else {
+                let total = Math.ceil((basePoints * 4) / 100) * 100;
+                scoreText = `${total}点`;
+            }
+        }
+
+        document.getElementById('resultScore').innerText = scoreText;
+        document.getElementById('resultDetail').innerText = titleText;
+
+        let displayYaku = [...bestPattern.yaku];
+        if (doraCount > 0) displayYaku.push(`ドラ (${doraCount}翻)`);
+
+        const yakuListDiv = document.getElementById('yakuList');
+        yakuListDiv.innerHTML = "<strong>判定された構成:</strong><br>" + displayYaku.join(' ＋ ');
+        yakuListDiv.style.display = 'block';
+    }
+
+    renderGrid();
+</script>
+</body>
+</html>
