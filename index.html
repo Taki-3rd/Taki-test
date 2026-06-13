@@ -6,90 +6,146 @@
     <title>マイホームページ</title>
     
     <style>
-        /* --- ここからポップな見た目にするためのデザイン（CSS） --- */
+        /* --- ここからApple風・洗練されたデザイン（CSS） --- */
         body {
-            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif;
-            background-color: #f0fdf4; /* 優しいパステルグリーン */
-            color: #333333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            background-color: #000000; /* Apple王道の漆黒 */
+            color: #f5f5f7; /* 純白ではない、目に優しい白 */
             margin: 0;
-            padding: 20px;
+            padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             min-height: 100vh;
             box-sizing: border-box;
+            overflow-x: hidden;
         }
 
-        .container {
-            max-width: 500px; /* スマホで見やすい横幅 */
+        /* 上部のすりガラス風ナビゲーションバー風の演出 */
+        .apple-nav {
+            position: fixed;
+            top: 0;
             width: 100%;
-            background: #ffffff;
-            padding: 30px 20px;
-            border-radius: 20px; /* 角を丸くしてポップに */
-            box-shadow: 0 8px 0 #bbf7d0; /* 太めのポップな影 */
-            border: 3px solid #22c55e; /* クッキリした緑の線 */
+            height: 48px;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid #333333;
+            z-index: 100;
+            animation: fadeInDown 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        /* メインのコンテナ（ポップな枠線や背景を排除） */
+        .container {
+            max-width: 600px;
+            width: 100%;
+            padding: 80px 20px 40px 20px; /* ナビバーの分、上に余白 */
             text-align: center;
             box-sizing: border-box;
-            margin: auto 0;
         }
 
+        /* 登場アニメーションの共通設定 */
+        .animate {
+            opacity: 0;
+            transform: translateY(40px);
+            animation: fadeInUp 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        /* タイトル：大きく、太く、圧倒的主役感 */
         h1 {
-            font-size: 24px;
-            color: #16a34a;
-            margin-bottom: 10px;
+            font-size: 48px;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0 0 16px 0;
+            letter-spacing: -0.015em;
+            animation-delay: 0.2s; /* 最初に動く */
         }
 
+        /* キャッチコピー：トーンを落とした絶妙なグレー */
         .intro {
-            font-size: 16px;
-            color: #666666;
-            margin-bottom: 30px;
+            font-size: 21px;
+            font-weight: 400;
+            color: #86868b;
+            margin-bottom: 40px;
+            letter-spacing: -0.01em;
+            animation-delay: 0.4s; /* 2番目に動く */
         }
 
-        /* リンクボタンの並び */
+        /* リンクナビゲーション */
+        nav {
+            animation-delay: 0.6s; /* 最後に動く */
+        }
+
         ul {
             list-style: none;
             padding: 0;
             margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px; /* ボタン同士の間隔 */
         }
 
         li {
-            margin-bottom: 15px; /* ボタン同士の間隔 */
+            width: 100%;
+            max-width: 320px; /* ボタンが細長くスマートに見える幅 */
         }
 
-        /* 👇 スマホでも押しやすい巨大なボタンリンク */
+        /* 👇 Appleの「購入」ボタンを意識した美しく青いカプセル型リンク */
         .btn-link {
             display: block;
-            background-color: #ffde59; /* 元気なイエロー */
-            color: #222222;
-            text-decoration: none; /* 下線を消す */
-            font-weight: bold;
-            font-size: 18px;
-            padding: 16px 20px; /* 上下に厚みをもたせて押しやすく */
-            border-radius: 50px; /* カプセル型の丸いボタン */
-            border: 3px solid #222222; /* クッキリした太枠 */
-            box-shadow: 0 5px 0 #222222; /* 飛び出たような立体感 */
-            transition: all 0.1s ease;
+            background-color: #007aff; /* Apple Blue */
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 17px;
+            padding: 14px 20px;
+            border-radius: 980px; /* 完全に滑らかな丸角 */
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
-        /* ボタンを押したときのぷにっとした動き */
+        /* マウスを乗せたとき・タップしたときにじわっと濃くなる */
+        .btn-link:hover {
+            background-color: #0066cc;
+            transform: scale(1.02); /* ほんの少しだけ大きくなって吸い付くようなエフェクト */
+        }
+
         .btn-link:active {
-            transform: translateY(3px);
-            box-shadow: 0 2px 0 #222222;
+            transform: scale(0.98); /* 押した瞬間は少し凹む */
+        }
+
+        /* --- アニメーションの軌道定義 --- */
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>ようこそ！<br>私のホームページへ</h1>
-        <p class="intro">ここはトップページです。目指せ雀王！！</p>
+    <div class="apple-nav"></div>
 
-        <nav>
+    <div class="container">
+        <h1 class="animate">ようこそ。<br>私のホームページへ。</h1>
+        <p class="intro animate">ここはトップページです。目指せ雀王！！</p>
+
+        <nav class="animate">
             <ul>
-                <li><a href="MJ_v3.html" class="btn-link">🙋‍♂️ MJ_v3</a></li>
-                <li><a href="MJ_v4.html" class="btn-link">📝 _MJ_v4</a></li>
-                <li><a href="MJ_v8.html" class="btn-link">📝 _MJ_v8</a></li>
-                <li><a href="MJ_pt_list_v6.html" class="btn-link">📝 _点数表</a></li>
+                <li><a href="MJ_v10.html" class="btn-link">🀄 _MJ_v8 を見る</a></li>
+                <li><a href="MJ_pt_list_v7.html" class="btn-link">📝 _点数表を確認</a></li>
             </ul>
         </nav>
     </div>
