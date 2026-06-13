@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>麻雀点数計算アプリ - 役一覧表示版</title>
+    <style>
+        /* 1. 基本設定 & 洗練されたフォント */
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* 背景は漆黒、文字色は目に優しい白 */
+        body { 
+            background-color: #000000; 
+            color: #f5f5f7;
+            padding: 50px 20px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-start; 
+            min-height: 100vh; 
+        }
+        
+        /* 3. 下から滑らかに浮き上がるアニメーション (fadeInUp) */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* アプリ全体のコンテナ（Apple風の大きな余白と角丸） */
+        .app-container { 
+            width: 100%; 
+            max-width: 500px; 
+            background: #1c1c1e; /* 漆黒に映える美しいダークグレー */
+            border-radius: 28px; 
+            padding: 32px; 
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            animation: fadeInUp 0.8s cubic-bezier(0.25, 1, 0.5, 1) both;
+        }
+
+        header h1 { 
+            font-size: 22px; 
+            color: #ffffff; 
+            text-align: center; 
+            margin-bottom: 32px; 
+            font-weight: 700; 
+            letter-spacing: -0.5px; 
+        }
+        
+        /* 2. 計算結果エリア（特別感のあるカード） */
+        .status-card { 
+            background: #2c2c2e; 
+            border-radius: 20px; 
+            padding: 24px; 
+            margin-bottom: 24px; 
+            text-align: center; 
+            transition: all 0.3s ease; 
+        }
+        .result-title { 
+            font-size: 12px; 
+            color: #8e8e93; 
+            margin-bottom: 8px; 
+            font-weight: 600; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+        }
+        .result-display { 
+            font-size: 34px; 
+            font-weight: 700; 
+            color: #6497b1; /* Appleダークモード用の鮮やかな赤 */
+            margin-bottom: 6px; 
+            letter-spacing: -1px; 
+        }
+        .result-detail { 
+            font-size: 17px; 
+            color: #ffffff; 
+            font-weight: 600; 
+        }
+        .yaku-list { 
+            font-size: 13px; 
+            color: #d1d1d6; 
+            margin-top: 16px; 
+            background: #1c1c1e; 
+            padding: 14px; 
+            border-radius: 12px; 
+            border: 1px solid #333333; /* 暗闇に溶け込む細いグレー線 */
+            display: inline-block; 
+            text-align: left; 
+            width: 100%; 
+            line-height: 1.6; 
+        }
+        
+        /* 4. クイックアクションボタン（カプセル型＆極上のホバーエフェクト） */
+        .action-toggle-container { 
+            display: flex; 
+            gap: 12px; 
+            margin-bottom: 20px; 
+        }
+        .toggle-btn { 
+            flex: 1; 
+            padding: 14px; 
+            font-size: 14px; 
+            font-weight: 600; 
+            border: 1px solid #333333; 
+            border-radius: 30px; /* 完全なカプセル型 */
+            background: #2c2c2e; 
+            color: #f5f5f7; 
+            cursor: pointer; 
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .toggle-btn:hover { 
+            background: #3a3a3c; 
+            border-color: #48484a;
+        }
+        /* 特有のアクティブ状態は洗練された輝きに */
+        .toggle-btn.active-riichi { 
+            background: #ffd60a; 
+            border-color: #ffd60a; 
+            color: #000000; 
+            font-weight: 700;
+            box-shadow: 0 0 15px rgba(255, 214, 10, 0.3);
+        }
+        .toggle-btn.active-tsumo { 
+            background: #0a84ff; 
+            border-color: #0a84ff; 
+            color: #ffffff; 
+            font-weight: 700;
+            box-shadow: 0 0 15px rgba(10, 132, 255, 0.4);
+        }
+
+        /* 条件設定エリア */
+        .config-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 16px; 
+            background: #2c2c2e; 
+            border-radius: 20px; 
+            padding: 20px; 
+            margin-bottom: 24px; 
+        }
+        .config-group { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+        }
+        .config-group label { 
+            font-size: 12px; 
+            font-weight: 600; 
+            color: #8e8e93; 
+            padding-left: 4px; 
+        }
+        .config-select { 
+            width: 100%; 
+            padding: 12px 16px; 
+            font-size: 15px; 
+            font-weight: 500; 
+            border: 1px solid #3a3a3c; 
+            border-radius: 12px; 
+            background-color: #1c1c1e; 
+            color: #ffffff; 
+            cursor: pointer; 
+            outline: none; 
+            transition: border-color 0.2s; 
+            appearance: none; 
+            /* ダークモードに最適化した矢印アイコン */
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%238e8e93' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e"); 
+            background-repeat: no-repeat; 
+            background-position: right 16px center; 
+            background-size: 12px 12px; 
+        }
+        .config-select:focus { 
+            border-color: #0a84ff; 
+        }
+        
+        /* 手牌表示エリア */
+        .section-title { 
+            font-size: 14px; 
+            font-weight: 600; 
+            color: #8e8e93; 
+            margin-bottom: 10px; 
+            padding-left: 4px; 
+        }
+        .hand-container { 
+            background: #1c1c1e; 
+            border: 2px dashed #3a3a3c; 
+            border-radius: 20px; 
+            padding: 16px; 
+            min-height: 84px; 
+            display: flex; 
+            gap: 6px; 
+            overflow-x: auto; 
+            margin-bottom: 28px; 
+            align-items: center; 
+        }
+        /* 麻雀牌のデザインを高級感あるブラック・ホワイト調へ昇華 */
+        .tile { 
+            width: 34px; 
+            height: 48px; 
+            background: #ffffff; 
+            color: #000000;
+            border-radius: 6px; 
+            box-shadow: 0 4px 0 #d1d1d6, inset 0 -2px 4px rgba(0,0,0,0.1); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 26px; 
+            cursor: pointer; 
+            user-select: none; 
+            transition: transform 0.1s, box-shadow 0.1s; 
+        }
+        .tile:active { 
+            transform: translateY(3px); 
+            box-shadow: 0 1px 0 #d1d1d6; 
+        }
+        .hand-tile { 
+            border-bottom: 3px solid #ff453a; 
+        }
+        .placeholder { 
+            color: #8e8e93; 
+            font-size: 14px; 
+            width: 100%; 
+            text-align: center; 
+            font-weight: 500; 
+        }
+        
+        /* 牌選択パネル */
+        .selection-panel { 
+            background: #2c2c2e; 
+            border-radius: 24px; 
+            padding: 18px; 
+            margin-bottom: 28px; 
+        }
+        .tabs { 
+            display: flex; 
+            gap: 6px; 
+            margin-bottom: 14px; 
+        }
+        .tab-btn { 
+            flex: 1; 
+            padding: 10px; 
+            background: rgba(255,255,255,0.04); 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 13px; 
+            color: #aeaeae; 
+            transition: all 0.2s; 
+        }
+        .tab-btn.active { 
+            background: #1c1c1e; 
+            color: #0a84ff; 
+            font-weight: 700;
+        }
+        .tile-grid { 
+            display: grid; 
+            grid-template-columns: repeat(9, 1fr); 
+            gap: 8px; 
+            background: #1c1c1e; 
+            padding: 14px; 
+            border-radius: 16px; 
+        }
+        .tile-grid.jihai { 
+            grid-template-columns: repeat(7, 1fr); 
+        }
+        
+        /* 牌の種類別カラー（ダークモードで見えやすい鮮明な発色に変更） */
+        .manzu .tile { color: #ff453a; }
+        .pinzu .tile { color: #0a84ff; }
+        .sozu .tile { color: #30d158; }
+        .jihai .tile { color: #1c1c1e; }
+        
+        /* 全消去ボタン（Apple風カプセル型レッド） */
+        .control-btns { 
+            margin-top: 16px; 
+            display: flex; 
+            gap: 10px; 
+        }
+        .action-btn { 
+            flex: 1; 
+            padding: 14px; 
+            border: none; 
+            border-radius: 30px; /* 完全な丸角 */
+            font-weight: 600; 
+            font-size: 14px; 
+            cursor: pointer; 
+            transition: background 0.2s; 
+        }
+        .clear-btn { 
+            background: #ff453a; 
+            color: #ffffff; 
+            transition: all 0.2s ease;
+        }
+        .clear-btn:hover { 
+            background: #ff3b30; 
+            box-shadow: 0 0 12px rgba(255, 69, 58, 0.4);
+        }
+
+        /* 5. 対応役一覧表示パネル（暗闇に美しく溶け込むテーブル） */
+        .yaku-guide-panel { 
+            background: #1c1c1e; 
+            border: 1px solid #333333; 
+            border-radius: 20px; 
+            padding: 20px; 
+        }
+        .guide-title { 
+            font-size: 15px; 
+            font-weight: 700; 
+            color: #ffffff; 
+            margin-bottom: 16px; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+        }
+        .guide-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 13px; 
+        }
+        .guide-table th, .guide-table td { 
+            padding: 12px 10px; 
+            text-align: left; 
+            border-bottom: 1px solid #333333; /* 暗いグレーの細い線 */
+        }
+        .guide-table th { 
+            color: #8e8e93; 
+            font-weight: 600; 
+            background: transparent; 
+            font-size: 12px; 
+            text-transform: uppercase; 
+        }
+        .guide-table tbody tr:hover { 
+            background-color: rgba(255, 255, 255, 0.02); /* じわっと浮き出るホバー */
+        }
+        .guide-table td strong { 
+            color: #ffffff; 
+            font-weight: 600;
+        }
+        
+        /* 翻数バッジ（洗練されたコンパクトデザイン） */
+        .badge-han { 
+            background: rgba(255, 69, 58, 0.15); 
+            color: #ff453a; 
+            padding: 4px 8px; 
+            border-radius: 6px; 
+            font-size: 11px; 
+            font-weight: 700; 
+            display: inline-block; 
+            min-width: 38px; 
+            text-align: center; 
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1>🀄 麻雀点数計算 - apple版</h1>
+    </header>
+
+    <div class="status-card">
+        <div class="result-title">自動判定結果</div>
+        <div class="result-display" id="resultScore">ーーー</div>
+        <div class="result-detail" id="resultDetail">手牌を14枚選んでください</div>
+        <div class="yaku-list" id="yakuList" style="display:none;"></div>
+    </div>
+
+    <div class="action-toggle-container">
+        <button class="toggle-btn" id="btnRiichi" onclick="toggleRiichi()">リーチ (OFF)</button>
+        <button class="toggle-btn" id="btnTsumo" onclick="toggleTsumo()">ツモorロン</button>
+    </div>
+
+    <div class="config-grid">
+        <div class="config-group">
+            <label for="selectBa">場風 (バカゼ)</label>
+            <select class="config-select" id="selectBa" onchange="triggerAutoCalc()">
+                <option value="z1">東場</option>
+                <option value="z2">南場</option>
+            </select>
+        </div>
+
+        <div class="config-group">
+            <label for="selectXia">自風 (ジカゼ)</label>
+            <select class="config-select" id="selectXia" onchange="triggerAutoCalc()">
+                <option value="z1">東家 (親)</option>
+                <option value="z2">南家 (子)</option>
+                <option value="z3">西家 (子)</option>
+                <option value="z4">北家 (子)</option>
+            </select>
+        </div>
+
+        <div class="config-group" style="grid-column: span 2;">
+            <label for="selectDora">ドラの数</label>
+            <select class="config-select" id="selectDora" onchange="triggerAutoCalc()">
+                <option value="0">なし</option>
+                <option value="1">ドラ 1</option>
+                <option value="2">ドラ 2</option>
+                <option value="3">ドラ 3</option>
+                <option value="4">ドラ 4</option>
+                <option value="5">ドラ 5</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="section-title">現在の手牌 (<span id="tileCount">0</span>/14枚)</div>
+    <div class="hand-container" id="handContainer" onclick="removeTile(event)">
+        <div class="placeholder">下のパネルから牌をタップして追加</div>
+    </div>
+
+    <div class="selection-panel">
+        <div class="tabs">
+            <button class="tab-btn active" id="tab-manzu" onclick="switchTab('manzu')">萬子</button>
+            <button class="tab-btn" id="tab-pinzu" onclick="switchTab('pinzu')">筒子</button>
+            <button class="tab-btn" id="tab-sozu" onclick="switchTab('sozu')">索子</button>
+            <button class="tab-btn" id="tab-jihai" onclick="switchTab('jihai')">字牌</button>
+        </div>
+
+        <div class="tile-grid manzu" id="gridContainer"></div>
+
+        <div class="control-btns">
+            <button class="action-btn clear-btn" onclick="clearHand()">全消去</button>
+        </div>
+    </div>
+
+    <div class="yaku-guide-panel">
+        <div class="guide-title">📋 判定可能な役一覧</div>
+        <table class="guide-table">
+            <thead>
+                <tr>
+                    <th style="width: 32%;">役名</th>
+                    <th style="width: 20%;">翻数</th>
+                    <th style="width: 48%;">判定条件 / 特徴</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>立直</strong> (リーチ)</td>
+                    <td><span class="badge-han">1翻</span></td>
+                    <td>画面の「立直」ボタンONで付与</td>
+                </tr>
+                <tr>
+                    <td><strong>門前清自模和</strong></td>
+                    <td><span class="badge-han">1翻</span></td>
+                    <td>画面の「ツモ」ボタンONで自動付与</td>
+                </tr>
+                <tr>
+                    <td><strong>断幺九</strong> (タンヤオ)</td>
+                    <td><span class="badge-han">1翻</span></td>
+                    <td>2〜8の数牌（中張牌）だけで構成</td>
+                </tr>
+                <tr>
+                    <td><strong>平和</strong> (ピンフ)</td>
+                    <td><span class="badge-han">1翻</span></td>
+                    <td>4順子+役牌以外のアタマ+両面待ち</td>
+                </tr>
+                <tr>
+                    <td><strong>対々和</strong> (トイトイ)</td>
+                    <td><span class="badge-han">2翻</span></td>
+                    <td>4つの面子がすべて同じ牌3枚（刻子）</td>
+                </tr>
+                <tr>
+                    <td><strong>七対子</strong> (チートイ)</td>
+                    <td><span class="badge-han">2翻</span></td>
+                    <td>同じペアが重複なしで7組（25符固定）</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let currentHand = []; 
+    let sortedHand = [];  
+    let currentTab = 'manzu';
+    
+    let isRiichiActive = false;
+    let isTsumoActive = false;
+
+    const tilesMap = {
+        'm1':'🀇','m2':'🀈','m3':'🀉','m4':'🀊','m5':'🀋','m6':'🀌','m7':'🀍','m8':'🀎','m9':'🀏',
+        'p1':'🀙','p2':'🀚','p3':'🀛','p4':'🀜','p5':'🀝','p6':'🀞','p7':'🀟','p8':'🀠','p9':'🀡',
+        's1':'🀐','s2':'🀑','s3':'🀒','s4':'🀓','s5':'🀔','s6':'🀕','s7':'🀖','s8':'🀗','s9':'🀘',
+        'z1':'🀀','z2':'🀁','z3':'🀂','z4':'🀃','z5':'🀆','z6':'🀅','z7':'🀄'
+    };
+
+    const tilesData = {
+        manzu: ['m1','m2','m3','m4','m5','m6','m7','m8','m9'],
+        pinzu: ['p1','p2','p3','p4','p5','p6','p7','p8','p9'],
+        sozu:  ['s1','s2','s3','s4','s5','s6','s7','s8','s9'],
+        jihai: ['z1','z2','z3','z4','z5','z6','z7']
+    };
+
+    function renderGrid() {
+        const grid = document.getElementById('gridContainer');
+        grid.innerHTML = '';
+        grid.className = `tile-grid ${currentTab}`;
+        tilesData[currentTab].forEach(code => {
+            const tileDiv = document.createElement('div');
+            tileDiv.className = 'tile';
+            tileDiv.innerText = tilesMap[code];
+            tileDiv.onclick = () => addTile(code);
+            grid.appendChild(tileDiv);
+        });
+    }
+
+    function switchTab(tabName) {
+        currentTab = tabName;
+        ['manzu', 'pinzu', 'sozu', 'jihai'].forEach(t => {
+            document.getElementById(`tab-${t}`).classList.remove('active');
+        });
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+        renderGrid();
+    }
+
+    function addTile(code) {
+        if (currentHand.length >= 14) return;
+        currentHand.push(code);
+        sortedHand = [...currentHand].sort((a, b) => a.localeCompare(b));
+        updateHandUI();
+        if (currentHand.length === 14) offlineCalculate();
+    }
+
+    function removeTile(event) {
+        const clickedTile = event.target.closest('.hand-tile');
+        if (!clickedTile) return;
+        const index = parseInt(clickedTile.dataset.index);
+        const targetCode = sortedHand[index];
+        const origIndex = currentHand.indexOf(targetCode);
+        if (origIndex > -1) currentHand.splice(origIndex, 1);
+        sortedHand = [...currentHand].sort((a, b) => a.localeCompare(b));
+        updateHandUI();
+    }
+
+    function clearHand() {
+        currentHand = [];
+        sortedHand = [];
+        updateHandUI();
+    }
+
+    function updateHandUI() {
+        const container = document.getElementById('handContainer');
+        document.getElementById('tileCount').innerText = sortedHand.length;
+
+        if (sortedHand.length === 0) {
+            container.innerHTML = '<div class="placeholder">下のパネルから牌をタップして追加</div>';
+            document.getElementById('resultScore').innerText = "ーーー";
+            document.getElementById('resultDetail').innerText = "手牌を14枚選んでください";
+            document.getElementById('yakuList').style.display = 'none';
+            return;
+        }
+
+        container.innerHTML = '';
+        sortedHand.forEach((code, index) => {
+            const tileDiv = document.createElement('div');
+            tileDiv.className = 'tile hand-tile';
+            tileDiv.innerText = tilesMap[code];
+            tileDiv.dataset.index = index;
+            container.appendChild(tileDiv);
+        });
+
+        if (sortedHand.length < 14) {
+            document.getElementById('resultDetail').innerText = `あと ${14 - sortedHand.length} 枚選んでください`;
+            document.getElementById('resultScore').innerText = "ーーー";
+            document.getElementById('yakuList').style.display = 'none';
+        }
+    }
+
+    function toggleRiichi() {
+        isRiichiActive = !isRiichiActive;
+        const btn = document.getElementById('btnRiichi');
+        if (isRiichiActive) {
+            btn.innerText = "立直 (ON)";
+            btn.classList.add('active-riichi');
+        } else {
+            btn.innerText = "リーチ (OFF)";
+            btn.classList.remove('active-riichi');
+        }
+        triggerAutoCalc();
+    }
+
+    function toggleTsumo() {
+        isTsumoActive = !isTsumoActive;
+        const btn = document.getElementById('btnTsumo');
+        if (isTsumoActive) {
+            btn.innerText = "ツモ";
+            btn.classList.add('active-tsumo');
+        } else {
+            btn.innerText = "ロン";
+            btn.classList.remove('active-tsumo');
+        }
+        triggerAutoCalc();
+    }
+
+    function triggerAutoCalc() {
+        if (sortedHand.length === 14) offlineCalculate();
+    }
+
+    function offlineCalculate() {
+        const baCode = document.getElementById('selectBa').value;   
+        const xiaCode = document.getElementById('selectXia').value; 
+        const isOya = xiaCode === 'z1';
+        const doraCount = parseInt(document.getElementById('selectDora').value);
+        
+        const agariCode = currentHand[currentHand.length - 1]; 
+
+        const counts = {};
+        Object.keys(tilesMap).forEach(k => counts[k] = 0);
+        sortedHand.forEach(c => counts[c]++);
+
+        let pairCount = 0;
+        Object.values(counts).forEach(v => { if(v === 2) pairCount++; });
+        
+        let validPatterns = [];
+
+        if (pairCount === 7) {
+            let yakuNames = ['七対子 (2翻)'];
+            let han = 2;
+            if (isRiichiActive) { yakuNames.push("立直 (1翻)"); han += 1; }
+            if (isTsumoActive) { yakuNames.push("門前清自模和 (1翻)"); han += 1; }
+            validPatterns.push({ type: 'chitoitsu', fu: 25, yaku: yakuNames, han: han });
+        }
+
+        let solutions = [];
+        function FormTeams(restCounts, currentArrangement) {
+            let keys = Object.keys(restCounts).filter(k => restCounts[k] > 0);
+            if (keys.length === 0) {
+                solutions.push(JSON.parse(JSON.stringify(currentArrangement)));
+                return;
+            }
+            let firstTile = keys[0];
+
+            if (restCounts[firstTile] >= 3) {
+                restCounts[firstTile] -= 3;
+                currentArrangement.koutsu.push(firstTile);
+                FormTeams(restCounts, currentArrangement);
+                currentArrangement.koutsu.pop();
+                restCounts[firstTile] += 3;
+            }
+
+            if (firstTile[0] !== 'z') {
+                let num = parseInt(firstTile[1]);
+                let next1 = firstTile[0] + (num + 1);
+                let next2 = firstTile[0] + (num + 2);
+                if (restCounts[next1] > 0 && restCounts[next2] > 0) {
+                    restCounts[firstTile]--;
+                    restCounts[next1]--;
+                    restCounts[next2]--;
+                    currentArrangement.shuntsu.push(firstTile); 
+                    FormTeams(restCounts, currentArrangement);
+                    currentArrangement.shuntsu.pop();
+                    restCounts[firstTile]++;
+                    restCounts[next1]++;
+                    restCounts[next2]++;
+                }
+            }
+        }
+
+        Object.keys(counts).forEach(tile => {
+            if (counts[tile] >= 2) {
+                counts[tile] -= 2;
+                FormTeams(counts, { jantou: tile, koutsu: [], shuntsu: [] });
+                counts[tile] += 2;
+            }
+        });
+
+        if (solutions.length > 0) {
+            solutions.forEach(sol => {
+                let yakuNames = [];
+                let han = 0;
+                let fuDetails = 20; 
+
+                if (isRiichiActive) { yakuNames.push("立直 (1翻)"); han += 1; }
+                if (isTsumoActive)  { yakuNames.push("門前清自模和 (1翻)"); han += 1; }
+
+                let isTanyao = true;
+                sortedHand.forEach(c => {
+                    if (c.includes('1') || c.includes('9') || c.includes('z')) isTanyao = false;
+                });
+                if (isTanyao) { yakuNames.push("断幺九 (1翻)"); han += 1; }
+
+                if (sol.koutsu.length === 4) { yakuNames.push("対々和 (2翻)"); han += 2; }
+
+                let isRyanmen = false;
+                let isPinfuJantouValid = true;
+
+                if (sol.jantou === 'z5' || sol.jantou === 'z6' || sol.jantou === 'z7' || sol.jantou === baCode || sol.jantou === xiaCode) {
+                    isPinfuJantouValid = false;
+                }
+
+                sol.shuntsu.forEach(startTile => {
+                    let type = startTile[0];
+                    let num = parseInt(startTile[1]);
+                    if (agariCode === type + (num + 2) && num !== 7) { isRyanmen = true; }
+                    if (agariCode === type + num && num !== 1) { isRyanmen = true; }
+                });
+
+                let isPinfu = false;
+                if (sol.shuntsu.length === 4 && isPinfuJantouValid && isRyanmen) {
+                    isPinfu = true;
+                    yakuNames.push("平和 (1翻)");
+                    han += 1;
+                }
+
+                if (isPinfu) {
+                    fuDetails = isTsumoActive ? 20 : 30; 
+                } else {
+                    fuDetails = isTsumoActive ? 20 : 30;
+                    sol.koutsu.forEach(k => {
+                        if (k.includes('1') || k.includes('9') || k.includes('z')) fuDetails += 4; 
+                        else fuDetails += 2; 
+                    });
+                    if (sol.jantou === 'z5' || sol.jantou === 'z6' || sol.jantou === 'z7' || sol.jantou === baCode || sol.jantou === xiaCode) {
+                        fuDetails += 2;
+                    }
+                    if (!isRyanmen && sol.jantou !== agariCode) { fuDetails += 2; }
+                    if (sol.jantou === agariCode) { fuDetails += 2; }
+                    if (isTsumoActive) fuDetails += 2;
+                }
+
+                let roundedFu = Math.ceil(fuDetails / 10) * 10;
+                if (roundedFu < 30 && !isTsumoActive && !isPinfu) roundedFu = 30;
+
+                if (yakuNames.length === 0 && !isTsumoActive) {
+                    yakuNames.push("メンゼンロン (1翻相当)"); 
+                    han += 1;
+                }
+
+                validPatterns.push({ type: 'normal', fu: roundedFu, yaku: yakuNames, han: han });
+            });
+        }
+
+        if (validPatterns.length === 0) {
+            document.getElementById('resultScore').innerText = "不成立";
+            document.getElementById('resultDetail').innerText = "アガリの形になっていません。";
+            document.getElementById('yakuList').style.display = 'none';
+            return;
+        }
+
+        let bestPattern = validPatterns[0];
+        let maxScore = 0;
+
+        validPatterns.forEach(p => {
+            let totalHan = p.han + doraCount;
+            let bp = 0;
+            if (totalHan >= 13) bp = 8000;
+            else if (totalHan >= 11) bp = 6000;
+            else if (totalHan >= 8) bp = 4000;
+            else if (totalHan >= 6) bp = 3000;
+            else if (totalHan === 5 || (totalHan === 4 && p.fu >= 40) || (totalHan === 3 && p.fu >= 70)) bp = 2000;
+            else {
+                bp = p.fu * Math.pow(2, totalHan + 2);
+                if (bp > 2000) bp = 2000;
+            }
+            if (bp > maxScore) { maxScore = bp; bestPattern = p; }
+        });
+
+        let finalHan = bestPattern.han + doraCount;
+        let basePoints = maxScore;
+        let titleText = `${bestPattern.fu}符 ${finalHan}翻`;
+
+        if (finalHan >= 13) titleText = "役満";
+        else if (finalHan >= 11) titleText = "三倍満";
+        else if (finalHan >= 8) titleText = "倍満";
+        else if (finalHan >= 6) titleText = "跳満";
+        else if (basePoints === 2000) titleText = "満貫";
+
+        let scoreText = "";
+        if (isOya) {
+            if (isTsumoActive) {
+                let payment = Math.ceil((basePoints * 2) / 100) * 100;
+                scoreText = `${payment}点オール`;
+            } else {
+                let total = Math.ceil((basePoints * 6) / 100) * 100;
+                scoreText = `${total}点`;
+            }
+        } else {
+            if (isTsumoActive) {
+                let oyaPayment = Math.ceil((basePoints * 2) / 100) * 100;
+                let koPayment = Math.ceil((basePoints * 1) / 100) * 100;
+                scoreText = `${koPayment} / ${oyaPayment}点`;
+            } else {
+                let total = Math.ceil((basePoints * 4) / 100) * 100;
+                scoreText = `${total}点`;
+            }
+        }
+
+        document.getElementById('resultScore').innerText = scoreText;
+        document.getElementById('resultDetail').innerText = titleText;
+
+        let displayYaku = [...bestPattern.yaku];
+        if (doraCount > 0) displayYaku.push(`ドラ (${doraCount}翻)`);
+
+        const yakuListDiv = document.getElementById('yakuList');
+        yakuListDiv.innerHTML = "<strong>判定された構成:</strong><br>" + displayYaku.join(' ＋ ');
+        yakuListDiv.style.display = 'block';
+    }
+
+    renderGrid();
+</script>
+</body>
+</html>
